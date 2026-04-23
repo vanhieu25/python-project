@@ -208,3 +208,87 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
 SELECT 4, id FROM permissions
 WHERE module IN ('contracts', 'reports', 'inventory')
   AND action IN ('view', 'export');
+
+-- =====================================================
+-- 0.4 SPRINT: EMPLOYEE KPI
+-- =====================================================
+
+-- Thêm fields vào bảng users cho KPI (chỉ nếu chưa tồn tại)
+-- SQLite không hỗ trợ IF NOT EXISTS cho ALTER TABLE, nên dùng cách khác
+
+-- Bảng kpi_records (Lịch sử KPI)
+CREATE TABLE IF NOT EXISTS kpi_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    period_type VARCHAR(20) DEFAULT 'monthly', -- monthly, quarterly, yearly
+    period_value VARCHAR(10) NOT NULL, -- '2024-01', '2024-Q1', '2024'
+
+    -- Số liệu thực tế
+    cars_sold INTEGER DEFAULT 0,
+    revenue_generated DECIMAL(15,2) DEFAULT 0,
+    new_customers INTEGER DEFAULT 0,
+    contracts_signed INTEGER DEFAULT 0,
+
+    -- Mục tiêu
+    target_cars INTEGER DEFAULT 0,
+    target_revenue DECIMAL(15,2) DEFAULT 0,
+
+    -- Tỷ lệ hoàn thành
+    cars_achievement_rate DECIMAL(5,2) DEFAULT 0,
+    revenue_achievement_rate DECIMAL(5,2) DEFAULT 0,
+    overall_score DECIMAL(5,2) DEFAULT 0,
+
+    -- Xếp hạng
+    period_rank INTEGER,
+    total_staff INTEGER,
+
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE(user_id, period_type, period_value)
+);
+
+-- Bảng kpi_targets (Mục tiêu KPI)
+CREATE TABLE IF NOT EXISTS kpi_targets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    period_type VARCHAR(20) DEFAULT 'monthly',
+    target_period VARCHAR(10) NOT NULL, -- '2024-01', '2024'
+
+    sales_target INTEGER DEFAULT 0,
+    revenue_target DECIMAL(15,2) DEFAULT 0,
+    new_customer_target INTEGER DEFAULT 0,
+
+    description TEXT,
+    created_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (created_by) REFERENCES users(id),
+    UNIQUE(user_id, period_type, target_period)
+);
+
+-- Indexes for KPI tables
+CREATE INDEX IF NOT EXISTS idx_kpi_user ON kpi_records(user_id);
+CREATE INDEX IF NOT EXISTS idx_kpi_period ON kpi_records(period_value);
+CREATE INDEX IF NOT EXISTS idx_kpi_type_period ON kpi_records(period_type, period_value);
+CREATE INDEX IF NOT EXISTS idx_kpi_targets_user ON kpi_targets(user_id);
+CREATE INDEX IF NOT EXISTS idx_kpi_rank ON kpi_records(period_rank);
+
+-- Trigger to auto-update kpi_records timestamp
+CREATE TRIGGER IF NOT EXISTS update_kpi_timestamp
+AFTER UPDATE ON kpi_records
+BEGIN
+    UPDATE kpi_records SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- Trigger to auto-update kpi_targets timestamp
+CREATE TRIGGER IF NOT EXISTS update_kpi_target_timestamp
+AFTER UPDATE ON kpi_targets
+BEGIN
+    UPDATE kpi_targets SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+

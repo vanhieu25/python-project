@@ -12,6 +12,7 @@ from .authorization_service import (
     PermissionDeniedError, NotAuthenticatedError,
     require_permission, require_any_permission, require_all_permissions
 )
+from .kpi_service import KPIService, KPIServiceError, InvalidPeriodError
 
 __all__ = [
     'UserService', 'UserServiceError', 'ValidationError',
@@ -19,5 +20,6 @@ __all__ = [
     'AccountLockedError', 'AccountInactiveError', 'SessionExpiredError',
     'AuthorizationService', 'AuthorizationError',
     'PermissionDeniedError', 'NotAuthenticatedError',
-    'require_permission', 'require_any_permission', 'require_all_permissions'
+    'require_permission', 'require_any_permission', 'require_all_permissions',
+    'KPIService', 'KPIServiceError', 'InvalidPeriodError'
 ]
