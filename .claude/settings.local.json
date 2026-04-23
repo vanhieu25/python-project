@@ -11,7 +11,10 @@
       "Bash(python -m pytest tests/test_user_repository.py -v)",
       "Bash(python -m unittest tests.test_user_repository -v)",
       "Bash(pip install:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(python -m pytest tests/test_authorization_service.py -v)",
+      "Bash(python -m unittest tests.test_authorization_service -v)",
+      "Bash(python:*)"
     ]
   }
 }

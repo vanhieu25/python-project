@@ -1,5 +1,5 @@
 -- Database Schema for Car Management System
--- Sprint 0.1 + 0.2: Employee Management + Authentication
+-- Sprint 0.1 + 0.2 + 0.3: Employee Management + Authentication + Authorization
 
 PRAGMA foreign_keys = ON;
 
@@ -69,6 +69,28 @@ CREATE TABLE IF NOT EXISTS login_attempts (
     user_agent TEXT
 );
 
+-- Bảng permissions (Danh sách quyền) - Sprint 0.3
+CREATE TABLE IF NOT EXISTS permissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    permission_name VARCHAR(100) NOT NULL,
+    permission_code VARCHAR(50) UNIQUE NOT NULL,
+    module VARCHAR(50), -- cars, customers, contracts, etc.
+    action VARCHAR(20), -- view, create, edit, delete, approve
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Bảng role_permissions (Gán quyền cho vai trò) - Sprint 0.3
+CREATE TABLE IF NOT EXISTS role_permissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role_id INTEGER NOT NULL,
+    permission_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE,
+    UNIQUE(role_id, permission_id)
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -85,6 +107,13 @@ CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_login_username ON login_attempts(username);
 CREATE INDEX IF NOT EXISTS idx_login_attempted ON login_attempts(attempted_at);
 CREATE INDEX IF NOT EXISTS idx_login_ip ON login_attempts(ip_address);
+
+-- Indexes for permissions - Sprint 0.3
+CREATE INDEX IF NOT EXISTS idx_permissions_code ON permissions(permission_code);
+CREATE INDEX IF NOT EXISTS idx_permissions_module ON permissions(module);
+CREATE INDEX IF NOT EXISTS idx_permissions_action ON permissions(action);
+CREATE INDEX IF NOT EXISTS idx_role_permissions_role ON role_permissions(role_id);
+CREATE INDEX IF NOT EXISTS idx_role_permissions_perm ON role_permissions(permission_id);
 
 -- Trigger to auto-update updated_at
 CREATE TRIGGER IF NOT EXISTS update_users_timestamp
@@ -105,6 +134,77 @@ INSERT OR IGNORE INTO roles (id, role_name, role_code, description, level) VALUE
 (4, 'Accountant', 'accountant', 'Kế toán viên', 4);
 
 -- Insert default admin user (password: admin123, hashed with bcrypt)
--- Note: In production, use proper bcrypt hashing
 INSERT OR IGNORE INTO users (id, username, password_hash, full_name, email, role_id, department, position, status) VALUES
 (1, 'admin', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewKyNiAYMyzJ/Ii2', 'Administrator', 'admin@cardealership.com', 1, 'Management', 'System Admin', 'active');
+
+-- Insert permissions - Sprint 0.3
+-- Cars Module
+INSERT OR IGNORE INTO permissions (id, permission_name, permission_code, module, action) VALUES
+(1, 'Xem danh sách xe', 'car.view', 'cars', 'view'),
+(2, 'Thêm xe mới', 'car.create', 'cars', 'create'),
+(3, 'Chỉnh sửa xe', 'car.edit', 'cars', 'edit'),
+(4, 'Xóa xe', 'car.delete', 'cars', 'delete'),
+(5, 'Xuất báo cáo xe', 'car.export', 'cars', 'export');
+
+-- Customers Module
+INSERT OR IGNORE INTO permissions (id, permission_name, permission_code, module, action) VALUES
+(6, 'Xem danh sách khách hàng', 'customer.view', 'customers', 'view'),
+(7, 'Thêm khách hàng', 'customer.create', 'customers', 'create'),
+(8, 'Chỉnh sửa khách hàng', 'customer.edit', 'customers', 'edit'),
+(9, 'Xóa khách hàng', 'customer.delete', 'customers', 'delete');
+
+-- Contracts Module
+INSERT OR IGNORE INTO permissions (id, permission_name, permission_code, module, action) VALUES
+(10, 'Xem hợp đồng', 'contract.view', 'contracts', 'view'),
+(11, 'Tạo hợp đồng', 'contract.create', 'contracts', 'create'),
+(12, 'Chỉnh sửa hợp đồng', 'contract.edit', 'contracts', 'edit'),
+(13, 'Xóa hợp đồng', 'contract.delete', 'contracts', 'delete'),
+(14, 'Duyệt hợp đồng', 'contract.approve', 'contracts', 'approve'),
+(15, 'In hợp đồng', 'contract.print', 'contracts', 'print');
+
+-- Inventory Module
+INSERT OR IGNORE INTO permissions (id, permission_name, permission_code, module, action) VALUES
+(16, 'Xem tồn kho', 'inventory.view', 'inventory', 'view'),
+(17, 'Nhập kho', 'inventory.import', 'inventory', 'create'),
+(18, 'Xuất kho', 'inventory.export', 'inventory', 'delete');
+
+-- Reports Module
+INSERT OR IGNORE INTO permissions (id, permission_name, permission_code, module, action) VALUES
+(19, 'Xem báo cáo', 'report.view', 'reports', 'view'),
+(20, 'Tạo báo cáo', 'report.create', 'reports', 'create'),
+(21, 'Xuất báo cáo', 'report.export', 'reports', 'export');
+
+-- Users Module
+INSERT OR IGNORE INTO permissions (id, permission_name, permission_code, module, action) VALUES
+(22, 'Xem nhân viên', 'user.view', 'users', 'view'),
+(23, 'Thêm nhân viên', 'user.create', 'users', 'create'),
+(24, 'Chỉnh sửa nhân viên', 'user.edit', 'users', 'edit'),
+(25, 'Xóa nhân viên', 'user.delete', 'users', 'delete'),
+(26, 'Phân quyền', 'user.assign_role', 'users', 'assign');
+
+-- Settings Module (Admin only)
+INSERT OR IGNORE INTO permissions (id, permission_name, permission_code, module, action) VALUES
+(27, 'Quản lý cài đặt', 'settings.manage', 'settings', 'manage'),
+(28, 'Sao lưu dữ liệu', 'backup.manage', 'backup', 'manage');
+
+-- Assign permissions to roles - Sprint 0.3
+-- Admin: Tất cả quyền
+INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
+SELECT 1, id FROM permissions;
+
+-- Manager: Quản lý (không có xóa)
+INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
+SELECT 2, id FROM permissions
+WHERE action IN ('view', 'create', 'edit', 'approve', 'export', 'print');
+
+-- Sales: Bán hàng (không có xóa, không có settings, backup)
+INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
+SELECT 3, id FROM permissions
+WHERE module IN ('cars', 'customers', 'contracts')
+  AND action IN ('view', 'create', 'edit', 'print');
+
+-- Accountant: Kế toán (chỉ xem và báo cáo)
+INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
+SELECT 4, id FROM permissions
+WHERE module IN ('contracts', 'reports', 'inventory')
+  AND action IN ('view', 'export');
