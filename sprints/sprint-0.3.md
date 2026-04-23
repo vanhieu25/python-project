@@ -4,7 +4,8 @@
 > **Ưu tiên**: CRITICAL  
 > **Thời gian**: 2 ngày  
 > **Blocked by**: Sprint-0.2 (Authentication)  
-> **Git Commit**: `feat: authorization system`
+> **Git Commit**: `feat: authorization system`  
+> **Branch**: `feature/0-foundation-auth`
 
 ---
 
@@ -126,9 +127,36 @@ Xây dựng hệ thống phân quyền (Authorization) dựa trên vai trò (Rol
 
 ### 7. Git Commit
 
+> **Lưu ý**: Tất cả commit của Sprint 0 phải được thực hiện trên branch `feature/0-foundation-auth`
+
+```bash
+# 1. Đảm bảo đang ở đúng branch
+git branch
+# Output: * feature/0-foundation-auth
+
+# 2. Add và commit changes
+git add .
+git commit -m "feat: authorization system
+
+- Add permissions and role_permissions tables
+- Implement RBAC (Role-Based Access Control)
+- Create permission decorators (@require_permission)
+- Add RoleManagementScreen UI
+- Implement data ownership checks
+- Add permission matrix and tests
+
+Relates to sprint-0.3"
+
+# 3. Push lên remote branch
+git push origin feature/0-foundation-auth
+```
+
+**Checklist:**
+- [ ] Đang ở branch `feature/0-foundation-auth`
 - [ ] Commit message đúng convention: `feat: authorization system`
-- [ ] Push lên remote branch
-- [ ] Tạo Pull Request nếu làm theo nhánh
+- [ ] Commit có description chi tiết
+- [ ] Push lên remote branch `origin feature/0-foundation-auth`
+- [ ] **KHÔNG push lên `main`** - Sprint 0 chưa cần merge ngay
 
 ---
 

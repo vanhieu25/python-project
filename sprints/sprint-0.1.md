@@ -4,7 +4,8 @@
 > **Ưu tiên**: CRITICAL  
 > **Thời gian**: 2 ngày  
 > **Blocked by**: — (Không có)  
-> **Git Commit**: `feat: employee management`
+> **Git Commit**: `feat: employee management`  
+> **Branch**: `feature/0-foundation-auth`
 
 ---
 
@@ -107,9 +108,34 @@ Xây dựng hệ thống quản lý nhân viên cơ bản, bao gồm tạo bản
 
 ### 7. Git Commit
 
+> **Lưu ý**: Tất cả commit của Sprint 0 phải được thực hiện trên branch `feature/0-foundation-auth`
+
+```bash
+# 1. Đảm bảo đang ở đúng branch
+git branch
+# Output: * feature/0-foundation-auth
+
+# 2. Add và commit changes
+git add .
+git commit -m "feat: employee management
+
+- Add users and roles tables
+- Implement UserRepository and RoleRepository
+- Create EmployeeListWidget and EmployeeDialog
+- Add unit tests for CRUD operations
+
+Closes sprint-0.1"
+
+# 3. Push lên remote branch
+git push origin feature/0-foundation-auth
+```
+
+**Checklist:**
+- [ ] Đang ở branch `feature/0-foundation-auth`
 - [ ] Commit message đúng convention: `feat: employee management`
-- [ ] Push lên remote branch
-- [ ] Tạo Pull Request nếu làm theo nhánh
+- [ ] Commit có description chi tiết (có thể có nhiều dòng)
+- [ ] Push lên remote branch `origin feature/0-foundation-auth`
+- [ ] **KHÔNG push lên `main`** - Sprint 0 chưa cần merge ngay
 
 ---
 
