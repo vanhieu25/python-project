@@ -364,5 +364,43 @@ CREATE TABLE IF NOT EXISTS car_history (
 CREATE INDEX IF NOT EXISTS idx_car_history_car ON car_history(car_id);
 CREATE INDEX IF NOT EXISTS idx_car_history_changed_at ON car_history(changed_at);
 
+-- =====================================================
+-- SPRINT 1.3: CAR SEARCH & FILTER
+-- =====================================================
+
+-- Full-text search virtual table
+CREATE VIRTUAL TABLE IF NOT EXISTS cars_fts USING fts5(
+    vin,
+    license_plate,
+    brand,
+    model,
+    description,
+    content='cars',
+    content_rowid='id'
+);
+
+-- Triggers để sync FTS index
+CREATE TRIGGER IF NOT EXISTS cars_ai AFTER INSERT ON cars BEGIN
+    INSERT INTO cars_fts(rowid, vin, license_plate, brand, model, description)
+    VALUES (new.id, new.vin, new.license_plate, new.brand, new.model, new.description);
+END;
+
+CREATE TRIGGER IF NOT EXISTS cars_ad AFTER DELETE ON cars BEGIN
+    INSERT INTO cars_fts(cars_fts, rowid, vin, license_plate, brand, model, description)
+    VALUES ('delete', old.id, old.vin, old.license_plate, old.brand, old.model, old.description);
+END;
+
+CREATE TRIGGER IF NOT EXISTS cars_au AFTER UPDATE ON cars BEGIN
+    INSERT INTO cars_fts(cars_fts, rowid, vin, license_plate, brand, model, description)
+    VALUES ('delete', old.id, old.vin, old.license_plate, old.brand, old.model, old.description);
+    INSERT INTO cars_fts(rowid, vin, license_plate, brand, model, description)
+    VALUES (new.id, new.vin, new.license_plate, new.brand, new.model, new.description);
+END;
+
+-- Additional indexes cho search
+CREATE INDEX IF NOT EXISTS idx_cars_brand_model ON cars(brand, model);
+CREATE INDEX IF NOT EXISTS idx_cars_price_range ON cars(selling_price);
+CREATE INDEX IF NOT EXISTS idx_cars_status_year ON cars(status, year);
+
 
 
