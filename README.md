@@ -225,24 +225,14 @@ mypy src/
 
 ---
 
-## 📦 Build & Deploy
-
-### Build executable (Windows)
-
-```bash
-pyinstaller carmanagement.spec
-```
-
-File executable sẽ được tạo tại `dist/CarManagement.exe`
-
----
-
 ## 👥 Tác giả
 
 **Nhóm 4** - Đồ án Lập trình Python
 
-- Thành viên: ...
-- Giảng viên hướng dẫn: ...
+- Thành viên:
+  - Nguyễn Văn Hiếu
+  - Lê minh Đạt
+  - Nguyễn Hữu Hải
 
 ---
 
