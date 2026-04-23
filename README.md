@@ -206,13 +206,34 @@ python-project/
 
 ## 🧪 Testing
 
+Xem chi tiết tại [Testing Guide](docs/TESTING.md)
+
+### Chạy nhanh
+
 ```bash
-# Chạy tất cả tests
-pytest tests/ -v
+# Chạy tất cả unit tests
+python -m unittest discover tests/ -v
 
-# Chạy test với coverage
-pytest tests/ --cov=src --cov-report=html
+# Chạy test cụ thể
+python -m unittest tests.test_kpi_service -v
 
+# Chạy test giao diện
+python run_ui_tests.py
+```
+
+### Unit Tests Coverage
+
+| Sprint | Tests | Status |
+|--------|-------|--------|
+| Sprint 0.1: Employee Management | 13 | ✅ Pass |
+| Sprint 0.2: Authentication | 21 | ✅ Pass |
+| Sprint 0.3: Authorization | 31 | ✅ Pass |
+| Sprint 0.4: Employee KPI | 25 | ✅ Pass |
+| **Tổng** | **90** | ✅ **Pass** |
+
+### Code Quality
+
+```bash
 # Format code
 black src/ tests/
 
