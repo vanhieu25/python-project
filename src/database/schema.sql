@@ -292,3 +292,58 @@ BEGIN
     UPDATE kpi_targets SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
+-- =====================================================
+-- SPRINT 1: CAR MANAGEMENT
+-- =====================================================
+
+-- Bảng cars (Thông tin xe)
+CREATE TABLE IF NOT EXISTS cars (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vin VARCHAR(17) UNIQUE NOT NULL,              -- Số khung (Vehicle Identification Number)
+    license_plate VARCHAR(20) UNIQUE,             -- Biển số xe
+    brand VARCHAR(50) NOT NULL,                   -- Hãng xe (Toyota, Honda, etc.)
+    model VARCHAR(50) NOT NULL,                   -- Dòng xe (Camry, Civic, etc.)
+    year INTEGER,                                 -- Năm sản xuất
+    color VARCHAR(30),                            -- Màu sắc
+    engine_number VARCHAR(50),                    -- Số máy
+    transmission VARCHAR(20),                     -- Hộp số (auto/manual/cvt)
+    fuel_type VARCHAR(20),                        -- Loại nhiên liệu (gasoline/diesel/electric/hybrid)
+    mileage INTEGER DEFAULT 0 CHECK (mileage >= 0),                    -- Số km đã đi
+    purchase_price DECIMAL(15,2) CHECK (purchase_price >= 0),        -- Giá nhập
+    selling_price DECIMAL(15,2) CHECK (selling_price >= 0),          -- Giá bán
+    status VARCHAR(20) DEFAULT 'available',       -- Trạng thái (available/sold/reserved/maintenance)
+    description TEXT,                             -- Mô tả chi tiết
+    images TEXT,                                  -- JSON array chứa đường dẫn ảnh
+    is_deleted BOOLEAN DEFAULT 0,                 -- Soft delete flag
+    deleted_at DATETIME,                          -- Thời điểm xóa
+    deleted_by INTEGER,                           -- Người xóa
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_by INTEGER,                           -- Người tạo record
+    FOREIGN KEY (created_by) REFERENCES users(id),
+    FOREIGN KEY (deleted_by) REFERENCES users(id)
+);
+
+-- Indexes cho cars
+CREATE INDEX IF NOT EXISTS idx_cars_vin ON cars(vin);
+CREATE INDEX IF NOT EXISTS idx_cars_license_plate ON cars(license_plate) WHERE license_plate IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_cars_brand ON cars(brand);
+CREATE INDEX IF NOT EXISTS idx_cars_model ON cars(model);
+CREATE INDEX IF NOT EXISTS idx_cars_status ON cars(status);
+CREATE INDEX IF NOT EXISTS idx_cars_year ON cars(year);
+CREATE INDEX IF NOT EXISTS idx_cars_price ON cars(selling_price);
+
+-- Trigger cập nhật updated_at cho cars
+CREATE TRIGGER IF NOT EXISTS update_cars_timestamp
+AFTER UPDATE ON cars
+BEGIN
+    UPDATE cars SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- Seed data cho cars
+INSERT OR IGNORE INTO cars (id, vin, license_plate, brand, model, year, color, purchase_price, selling_price, status) VALUES
+(1, '1HGCM82633A123456', '51A-12345', 'Honda', 'Civic', 2023, 'Đen', 750000000, 850000000, 'available'),
+(2, 'JTDBU4EE3B9123456', '51A-67890', 'Toyota', 'Camry', 2023, 'Trắng', 1200000000, 1350000000, 'available'),
+(3, 'WBA3A5G59C1234567', '51A-11111', 'BMW', '320i', 2022, 'Xám', 1500000000, 1650000000, 'available');
+
+
