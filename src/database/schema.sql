@@ -1,5 +1,5 @@
 -- Database Schema for Car Management System
--- Sprint 0.1: Employee Management
+-- Sprint 0.1 + 0.2: Employee Management + Authentication
 
 PRAGMA foreign_keys = ON;
 
@@ -41,11 +41,50 @@ CREATE TABLE IF NOT EXISTS users (
     FOREIGN KEY (role_id) REFERENCES roles(id)
 );
 
+-- Bảng sessions (Quản lý phiên đăng nhập) - Sprint 0.2
+CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    session_token VARCHAR(255) UNIQUE NOT NULL,
+    started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    device_info VARCHAR(100),
+    is_active BOOLEAN DEFAULT 1,
+    ended_at DATETIME,
+    end_reason VARCHAR(20), -- logout, timeout, forced, expired
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Bảng login_attempts (Theo dõi đăng nhập thất bại) - Sprint 0.2
+CREATE TABLE IF NOT EXISTS login_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR(50),
+    ip_address VARCHAR(45),
+    attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    success BOOLEAN DEFAULT 0,
+    failure_reason VARCHAR(50), -- user_not_found, wrong_password, account_locked
+    user_agent TEXT
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role_id);
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
+
+-- Indexes for sessions - Sprint 0.2
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_sessions_active ON sessions(is_active);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+
+-- Indexes for login_attempts - Sprint 0.2
+CREATE INDEX IF NOT EXISTS idx_login_username ON login_attempts(username);
+CREATE INDEX IF NOT EXISTS idx_login_attempted ON login_attempts(attempted_at);
+CREATE INDEX IF NOT EXISTS idx_login_ip ON login_attempts(ip_address);
 
 -- Trigger to auto-update updated_at
 CREATE TRIGGER IF NOT EXISTS update_users_timestamp

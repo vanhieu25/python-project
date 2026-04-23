@@ -10,7 +10,8 @@
       "Bash(git commit -m 'docs: update sprint-0 files with branch info and add git strategy:*)",
       "Bash(python -m pytest tests/test_user_repository.py -v)",
       "Bash(python -m unittest tests.test_user_repository -v)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
