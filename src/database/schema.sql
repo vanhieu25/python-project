@@ -346,4 +346,23 @@ INSERT OR IGNORE INTO cars (id, vin, license_plate, brand, model, year, color, p
 (2, 'JTDBU4EE3B9123456', '51A-67890', 'Toyota', 'Camry', 2023, 'Trắng', 1200000000, 1350000000, 'available'),
 (3, 'WBA3A5G59C1234567', '51A-11111', 'BMW', '320i', 2022, 'Xám', 1500000000, 1650000000, 'available');
 
+-- Bảng car_history (Lịch sử thay đổi xe) - Sprint 1.2
+CREATE TABLE IF NOT EXISTS car_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    car_id INTEGER NOT NULL,
+    action VARCHAR(20) NOT NULL,                  -- create, update, delete
+    field_name VARCHAR(50),                       -- Tên field thay đổi (nếu update)
+    old_value TEXT,                               -- Giá trị cũ
+    new_value TEXT,                               -- Giá trị mới
+    changed_by INTEGER,                           -- Người thay đổi
+    changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE CASCADE,
+    FOREIGN KEY (changed_by) REFERENCES users(id)
+);
+
+-- Indexes cho car_history
+CREATE INDEX IF NOT EXISTS idx_car_history_car ON car_history(car_id);
+CREATE INDEX IF NOT EXISTS idx_car_history_changed_at ON car_history(changed_at);
+
+
 
