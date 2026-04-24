@@ -1,6 +1,6 @@
 """
 Car Management UI Module
-List view for car management with full CRUD.
+Basic list view for car management.
 """
 
 import tkinter as tk
@@ -9,31 +9,22 @@ from typing import Optional, Callable, List
 
 from ...models.car import Car
 from ...repositories.car_repository import CarRepository
-from ...repositories.car_history_repository import CarHistoryRepository
-from ...services.car_service import CarService
 from ...database.db_helper import DatabaseHelper
 
 
 class CarListView(ttk.Frame):
-    """List view for cars with full CRUD operations."""
+    """List view for cars."""
 
-    def __init__(self, parent, db_helper: DatabaseHelper,
-                 current_user_id: int = 1, **kwargs):
+    def __init__(self, parent, db_helper: DatabaseHelper, **kwargs):
         """Initialize car list view.
 
         Args:
             parent: Parent widget
             db_helper: DatabaseHelper instance
-            current_user_id: Current user ID for audit
         """
         super().__init__(parent, **kwargs)
         self.db = db_helper
-        self.current_user_id = current_user_id
-
-        # Initialize service layer
         self.car_repo = CarRepository(self.db)
-        self.history_repo = CarHistoryRepository(self.db)
-        self.car_service = CarService(self.car_repo, self.history_repo)
 
         self._create_widgets()
         self._load_cars()
@@ -82,10 +73,6 @@ class CarListView(ttk.Frame):
         )
         status_combo.pack(side=tk.LEFT, padx=5)
         status_combo.bind("<<ComboboxSelected>>", lambda e: self._load_cars())
-
-        # Statistics
-        self.stats_label = ttk.Label(filter_frame, text="")
-        self.stats_label.pack(side=tk.RIGHT)
 
         # Treeview for cars
         tree_frame = ttk.Frame(self)
@@ -160,36 +147,29 @@ class CarListView(ttk.Frame):
         if status == "all":
             status = None
 
-        # Load cars via service
-        try:
-            cars = self.car_service.list_cars(status=status)
+        # Load cars
+        cars = self.car_repo.get_all(status=status)
 
-            # Insert into tree
-            for car in cars:
-                status_text = self._get_status_text(car.status)
-                price_text = car.get_price_display() if car.selling_price else "-"
+        # Insert into tree
+        for car in cars:
+            status_text = self._get_status_text(car.status)
+            price_text = car.get_price_display() if car.selling_price else "-"
 
-                self.tree.insert('', tk.END, values=(
-                    car.id,
-                    car.get_short_vin(),
-                    car.license_plate or "-",
-                    car.brand,
-                    car.model,
-                    car.year or "-",
-                    car.color or "-",
-                    price_text,
-                    status_text
-                ))
+            self.tree.insert('', tk.END, values=(
+                car.id,
+                car.get_short_vin(),
+                car.license_plate or "-",
+                car.brand,
+                car.model,
+                car.year or "-",
+                car.color or "-",
+                price_text,
+                status_text
+            ))
 
-            # Update statistics
-            stats = self.car_service.get_car_statistics()
-            self.stats_label.config(
-                text=f"Tổng: {stats['total']} | Còn: {stats['available']} | Đã bán: {stats['sold']} | Đặt: {stats['reserved']}"
-            )
-            self.status_bar.config(text=f"Đã tải {len(cars)} xe")
-
-        except Exception as e:
-            messagebox.showerror("Lỗi", f"Không thể tải danh sách xe: {str(e)}")
+        # Update status bar
+        count = len(cars)
+        self.status_bar.config(text=f"Tổng số: {count} xe")
 
     def _get_status_text(self, status: str) -> str:
         """Get Vietnamese status text."""
@@ -219,116 +199,78 @@ class CarListView(ttk.Frame):
 
     def _on_add_car(self):
         """Handle add car button."""
-        from .car_dialog import CarDialog
-        dialog = CarDialog(self, self.car_service, current_user_id=self.current_user_id)
-        self.wait_window(dialog)
-        if dialog.result:
-            self._load_cars()
+        messagebox.showinfo("Thêm xe", "Chức năng thêm xe sẽ được triển khai ở Sprint 1.2")
 
     def _on_view_car(self):
         """Handle view car."""
         car_id = self._get_selected_car_id()
-        if not car_id:
-            messagebox.showwarning("Cảnh báo", "Vui lòng chọn một xe")
-            return
-
-        try:
-            car = self.car_service.get_car(car_id)
-            profit = car.calculate_profit()
-            profit_str = f"{profit:,.0f} VNĐ ({car.get_profit_margin():.1f}%)" if profit else "Chưa có"
-
-            info = f"""VIN: {car.vin}
+        if car_id:
+            car = self.car_repo.get_by_id(car_id)
+            if car:
+                info = f"""
+VIN: {car.vin}
 Biển số: {car.license_plate or 'Chưa có'}
 Hãng/Model: {car.brand} {car.model}
 Năm SX: {car.year or 'Chưa có'}
 Màu: {car.color or 'Chưa có'}
-Hộp số: {car.transmission or 'Chưa có'}
-Nhiên liệu: {car.fuel_type or 'Chưa có'}
-Số km: {car.mileage:,} km
-Giá nhập: {car.get_price_display('purchase')}
-Giá bán: {car.get_price_display('selling')}
-Lợi nhuận: {profit_str}
+Giá bán: {car.get_price_display()}
 Trạng thái: {self._get_status_text(car.status)}
-Mô tả: {car.description or 'Không có'}"""
-
-            messagebox.showinfo("Thông tin xe", info)
-        except Exception as e:
-            messagebox.showerror("Lỗi", str(e))
+                """.strip()
+                messagebox.showinfo("Thông tin xe", info)
 
     def _on_edit_car(self):
         """Handle edit car."""
         car_id = self._get_selected_car_id()
-        if not car_id:
-            messagebox.showwarning("Cảnh báo", "Vui lòng chọn một xe để sửa")
-            return
-
-        try:
-            car = self.car_service.get_car(car_id)
-            from .car_dialog import CarDialog
-            dialog = CarDialog(self, self.car_service, car=car,
-                             current_user_id=self.current_user_id)
-            self.wait_window(dialog)
-            if dialog.result:
-                self._load_cars()
-        except Exception as e:
-            messagebox.showerror("Lỗi", str(e))
+        if car_id:
+            messagebox.showinfo("Sửa xe", f"Chức năng sửa xe (ID: {car_id}) sẽ được triển khai ở Sprint 1.2")
 
     def _on_delete_car(self):
         """Handle delete car."""
         car_id = self._get_selected_car_id()
         if not car_id:
-            messagebox.showwarning("Cảnh báo", "Vui lòng chọn một xe để xóa")
             return
 
         if messagebox.askyesno("Xác nhận", "Bạn có chắc muốn xóa xe này?"):
-            try:
-                self.car_service.delete_car(car_id, self.current_user_id)
-                messagebox.showinfo("Thành công", "Đã xóa xe")
-                self._load_cars()
-            except Exception as e:
-                messagebox.showerror("Lỗi", str(e))
+            self.car_repo.soft_delete(car_id, deleted_by=1)  # TODO: Get current user
+            self._load_cars()
+            messagebox.showinfo("Thành công", "Đã xóa xe")
 
 
 class CarManagementWindow(tk.Toplevel):
     """Standalone window for car management."""
 
-    def __init__(self, parent, db_helper: DatabaseHelper, current_user_id: int = 1):
+    def __init__(self, parent, db_helper: DatabaseHelper):
         """Initialize car management window.
 
         Args:
             parent: Parent window
             db_helper: DatabaseHelper instance
-            current_user_id: Current user ID
         """
         super().__init__(parent)
         self.title("Quản Lý Xe")
-        self.geometry("1200x700")
-        self.minsize(900, 500)
+        self.geometry("1000x600")
+        self.minsize(800, 400)
 
         # Create main view
-        self.car_list = CarListView(self, db_helper, current_user_id)
+        self.car_list = CarListView(self, db_helper)
         self.car_list.pack(fill=tk.BOTH, expand=True)
 
         # Center window
         self.transient(parent)
-        self.update_idletasks()
-        x = (self.winfo_screenwidth() // 2) - (self.winfo_width() // 2)
-        y = (self.winfo_screenheight() // 2) - (self.winfo_height() // 2)
-        self.geometry(f"+{x}+{y}")
+        self.grab_set()
+        self.focus_set()
 
 
-def open_car_management(parent: tk.Tk, db_path: str = "data/car_management.db",
-                       current_user_id: int = 1):
+def open_car_management(parent: tk.Tk, db_path: str = "data/car_management.db"):
     """Open car management window.
 
     Args:
         parent: Parent Tk instance
         db_path: Path to database file
-        current_user_id: Current user ID
     """
     from ...database.db_helper import DatabaseHelper
     db = DatabaseHelper(db_path)
-    CarManagementWindow(parent, db, current_user_id)
+    CarManagementWindow(parent, db)
 
 
 if __name__ == "__main__":
