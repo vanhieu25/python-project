@@ -4,7 +4,8 @@
 > **Ưu tiên**: CRITICAL  
 > **Thời gian**: 3 ngày  
 > **Blocked by**: Sprint-0.1 (Employee Management)  
-> **Git Commit**: `feat: employee KPI`
+> **Git Commit**: `feat: employee KPI`  
+> **Branch**: `feature/0-foundation-auth`
 
 ---
 
@@ -138,9 +139,36 @@ Xây dựng hệ thống theo dõi và đánh giá hiệu suất nhân viên (KP
 
 ### 7. Git Commit
 
+> **Lưu ý**: Tất cả commit của Sprint 0 phải được thực hiện trên branch `feature/0-foundation-auth`
+
+```bash
+# 1. Đảm bảo đang ở đúng branch
+git branch
+# Output: * feature/0-foundation-auth
+
+# 2. Add và commit changes
+git add .
+git commit -m "feat: employee KPI
+
+- Add kpi_records and kpi_targets tables
+- Implement KPIService with calculation logic
+- Create KPIDashboardScreen with charts
+- Add performance ranking and comparison
+- Implement auto-update from contracts
+- Add KPI trend analysis
+
+Relates to sprint-0.4"
+
+# 3. Push lên remote branch
+git push origin feature/0-foundation-auth
+```
+
+**Checklist:**
+- [ ] Đang ở branch `feature/0-foundation-auth`
 - [ ] Commit message đúng convention: `feat: employee KPI`
-- [ ] Push lên remote branch
-- [ ] Tạo Pull Request nếu làm theo nhánh
+- [ ] Commit có description chi tiết
+- [ ] Push lên remote branch `origin feature/0-foundation-auth`
+- [ ] **KHÔNG push lên `main`** - Sprint 0 chưa cần merge ngay
 
 ---
 
@@ -582,6 +610,56 @@ else:
 - **Targets**: Chỉ Admin/Manager mới có quyền set target
 - **Reports**: Có thể export ra PDF/Excel
 - **Trends**: So sánh với kỳ trước để xác định xu hướng
+
+## Hoàn Thành Sprint 0 (Foundation)
+
+Khi tất cả 4 sprint của module Foundation đã hoàn thành:
+
+### Quy Trình Merge vào Main
+
+```bash
+# 1. Chuyển về main và pull code mới nhất
+git checkout main
+git pull origin main
+
+# 2. Merge feature branch vào main
+git merge --no-ff feature/0-foundation-auth -m "Merge feature/0-foundation-auth: Foundation - Employee & Auth
+
+Sprint 0.1: Employee Management
+- Add users and roles tables
+- Implement UserRepository and RoleRepository
+- Create EmployeeListWidget and EmployeeDialog
+
+Sprint 0.2: Authentication
+- Add sessions and login_attempts tables
+- Implement bcrypt password hashing and AuthService
+- Create LoginDialog with session management
+
+Sprint 0.3: Authorization
+- Add permissions and role_permissions tables
+- Implement RBAC with permission decorators
+- Create RoleManagementScreen
+
+Sprint 0.4: Employee KPI
+- Add kpi_records and kpi_targets tables
+- Implement KPIService with calculation logic
+- Create KPIDashboardScreen with charts
+
+Closes #foundation-auth"
+
+# 3. Push lên main
+git push origin main
+
+# 4. (Tùy chọn) Xóa feature branch sau khi merge
+git branch -d feature/0-foundation-auth
+git push origin --delete feature/0-foundation-auth
+```
+
+### Sau Khi Merge
+
+- ✅ Các sprint tiếp theo (1.x, 2.x, 3.x) có thể bắt đầu
+- ✅ Các feature branch khác cần rebase từ main mới
+- ✅ Tạo tag nếu cần đánh dấu milestone: `git tag v0.1.0-foundation`
 
 ---
 

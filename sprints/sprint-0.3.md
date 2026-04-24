@@ -4,7 +4,8 @@
 > **Ưu tiên**: CRITICAL  
 > **Thời gian**: 2 ngày  
 > **Blocked by**: Sprint-0.2 (Authentication)  
-> **Git Commit**: `feat: authorization system`
+> **Git Commit**: `feat: authorization system`  
+> **Branch**: `feature/0-foundation-auth`
 
 ---
 
@@ -126,9 +127,37 @@ Xây dựng hệ thống phân quyền (Authorization) dựa trên vai trò (Rol
 
 ### 7. Git Commit
 
+> **Lưu ý**: Tất cả commit của Sprint 0 phải được thực hiện trên branch `feature/0-foundation-auth`
+
+```bash
+# 1. Đảm bảo đang ở đúng branch
+git branch
+# Output: * feature/0-foundation-auth
+
+# 2. Add và commit changes
+git add .
+git commit -m "feat: authorization system
+
+- Thêm bảng permissions và role_permissions
+- Triển khai RBAC (Kiểm soát truy cập dựa trên vai trò)
+- Tạo decorator kiểm tra quyền (@require_permission)
+- Thêm giao diện RoleManagementScreen
+- Triển khai kiểm tra quyền sở hữu dữ liệu
+- Thêm ma trận phân quyền và kiểm thử
+
+Relates to sprint-0.3"
+
+# 3. Push lên remote branch
+git push origin feature/0-foundation-auth
+```
+
+**Checklist:**
+
+- [ ] Đang ở branch `feature/0-foundation-auth`
 - [ ] Commit message đúng convention: `feat: authorization system`
-- [ ] Push lên remote branch
-- [ ] Tạo Pull Request nếu làm theo nhánh
+- [ ] Commit có description chi tiết
+- [ ] Push lên remote branch `origin feature/0-foundation-auth`
+- [ ] **KHÔNG push lên `main`** - Sprint 0 chưa cần merge ngay
 
 ---
 
@@ -226,18 +255,18 @@ SELECT 1, id FROM permissions; -- role_id 1 = admin
 
 -- Manager: Quản lý (không có xóa)
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT 2, id FROM permissions 
+SELECT 2, id FROM permissions
 WHERE action IN ('view', 'create', 'edit', 'approve', 'export', 'print');
 
 -- Sales: Bán hàng (không có xóa, không có settings)
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT 3, id FROM permissions 
-WHERE module IN ('cars', 'customers', 'contracts') 
+SELECT 3, id FROM permissions
+WHERE module IN ('cars', 'customers', 'contracts')
   AND action IN ('view', 'create', 'edit', 'print');
 
 -- Accountant: Kế toán (chỉ xem và báo cáo)
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT 4, id FROM permissions 
+SELECT 4, id FROM permissions
 WHERE module IN ('contracts', 'reports', 'inventory')
   AND action IN ('view', 'export');
 ```
@@ -263,38 +292,38 @@ class AuthorizationService:
         self.user_repo = user_repo
         # Cache permissions per user session
         self._permission_cache = {}
-    
+
     def get_user_permissions(self, user_id: int) -> Set[str]:
         """Get all permission codes for a user"""
         if user_id in self._permission_cache:
             return self._permission_cache[user_id]
-        
+
         user = self.user_repo.get_by_id(user_id)
         if not user or not user.get('role_id'):
             return set()
-        
+
         permissions = self.repo.get_permissions_by_role(user['role_id'])
         permission_codes = {p['permission_code'] for p in permissions}
-        
+
         self._permission_cache[user_id] = permission_codes
         return permission_codes
-    
+
     def has_permission(self, user_id: int, permission_code: str) -> bool:
         """Check if user has specific permission"""
         permissions = self.get_user_permissions(user_id)
         return permission_code in permissions
-    
+
     def has_any_permission(self, user_id: int, permission_codes: List[str]) -> bool:
         """Check if user has any of the permissions"""
         permissions = self.get_user_permissions(user_id)
         return any(code in permissions for code in permission_codes)
-    
+
     def has_all_permissions(self, user_id: int, permission_codes: List[str]) -> bool:
         """Check if user has all permissions"""
         permissions = self.get_user_permissions(user_id)
         return all(code in permissions for code in permission_codes)
-    
-    def can_access_resource(self, user_id: int, resource_type: str, 
+
+    def can_access_resource(self, user_id: int, resource_type: str,
                            resource_owner_id: int = None) -> bool:
         """
         Check if user can access specific resource
@@ -304,21 +333,21 @@ class AuthorizationService:
         user = self.user_repo.get_by_id(user_id)
         if not user:
             return False
-        
+
         # Admin can access everything
         if user.get('role_code') == 'admin':
             return True
-        
+
         # Manager can access everything in their department
         if user.get('role_code') == 'manager':
             return True
-        
+
         # Others can only access their own resources
         if resource_owner_id is not None:
             return user_id == resource_owner_id
-        
+
         return False
-    
+
     def clear_cache(self, user_id: int = None):
         """Clear permission cache"""
         if user_id:
@@ -337,16 +366,16 @@ def require_permission(permission_code: str):
             user_id = getattr(self, 'current_user_id', None)
             if not user_id:
                 raise PermissionError("User not authenticated")
-            
+
             auth_service = getattr(self, 'auth_service', None)
             if not auth_service:
                 raise RuntimeError("Auth service not available")
-            
+
             if not auth_service.has_permission(user_id, permission_code):
                 raise PermissionError(
                     f"Permission denied: {permission_code}"
                 )
-            
+
             return func(self, *args, **kwargs)
         return wrapper
     return decorator
@@ -360,13 +389,13 @@ def require_any_permission(permission_codes: List[str]):
             user_id = getattr(self, 'current_user_id', None)
             if not user_id:
                 raise PermissionError("User not authenticated")
-            
+
             auth_service = getattr(self, 'auth_service', None)
             if not auth_service.has_any_permission(user_id, permission_codes):
                 raise PermissionError(
                     f"Permission denied. Required any of: {permission_codes}"
                 )
-            
+
             return func(self, *args, **kwargs)
         return wrapper
     return decorator
@@ -374,12 +403,12 @@ def require_any_permission(permission_codes: List[str]):
 
 ### Permission Matrix
 
-| Role | car.view | car.create | car.edit | car.delete | customer.view | contract.create | settings.manage |
-|------|----------|------------|----------|------------|---------------|-----------------|-----------------|
-| Admin | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Manager | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
-| Sales | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ | ❌ |
-| Accountant | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Role       | car.view | car.create | car.edit | car.delete | customer.view | contract.create | settings.manage |
+| ---------- | -------- | ---------- | -------- | ---------- | ------------- | --------------- | --------------- |
+| Admin      | ✅       | ✅         | ✅       | ✅         | ✅            | ✅              | ✅              |
+| Manager    | ✅       | ✅         | ✅       | ❌         | ✅            | ✅              | ❌              |
+| Sales      | ✅       | ❌         | ✅       | ❌         | ✅            | ✅              | ❌              |
+| Accountant | ✅       | ❌         | ❌       | ❌         | ✅            | ❌              | ❌              |
 
 ---
 
