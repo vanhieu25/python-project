@@ -314,3 +314,8 @@ ENV/
 # Cache
 .cache/
 *.cache
+
+
+.claude/
+CLAUDE.md
+sprints/
