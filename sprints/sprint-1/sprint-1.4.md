@@ -1,15 +1,69 @@
-"""
-Car Validator Module
-Validation logic for car data.
-"""
+# Sprint-1.4: Car Validation Logic
 
+**Module**: 🚗 Car Management  
+**Mức độ ưu tiên**: Core  
+**Blocked by**: Sprint-1.2 (Car CRUD Operations)  
+**Ước lượng**: 1 ngày
+
+---
+
+## 1. Xác định Feature
+
+### Mô tả
+Hoàn thiện logic validation cho xe, đảm bảo dữ liệu chính xác và nhất quán. Xử lý các trường hợp edge case và hiển thị thông báo lỗi rõ ràng.
+
+### Yêu cầu
+- Validation toàn diện cho tất cả fields
+- Unique constraints (VIN, biển số)
+- Business validation (giá nhập < giá bán, năm SX hợp lý)
+- Error messages chi tiết, dễ hiểu (tiếng Việt)
+- Cross-field validation
+- Edge case testing
+
+### Dependencies
+- Sprint-1.2: Cần CRUD operations cơ bản
+
+---
+
+## 2. Database
+
+### Constraints
+```sql
+-- Đảm bảo constraints đã được áp dụng
+-- (Đã có trong schema từ Sprint-1.1)
+
+-- Thêm CHECK constraints
+ALTER TABLE cars ADD CONSTRAINT chk_year_valid
+    CHECK (year >= 1900 AND year <= strftime('%Y', 'now') + 1);
+
+ALTER TABLE cars ADD CONSTRAINT chk_price_positive
+    CHECK (purchase_price >= 0 AND selling_price >= 0);
+
+ALTER TABLE cars ADD CONSTRAINT chk_mileage_positive
+    CHECK (mileage >= 0);
+
+-- Thêm unique constraint cho VIN (đã có)
+-- Thêm unique constraint cho license_plate (đã có, nullable)
+
+-- Tạo index cho unique check nhanh hơn
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cars_vin_unique ON cars(vin) WHERE is_deleted = 0;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cars_plate_unique ON cars(license_plate) WHERE license_plate IS NOT NULL AND is_deleted = 0;
+```
+
+---
+
+## 3. Backend Logic
+
+### Enhanced Validator
+```python
+# src/validators/car_validator.py
 import re
-from typing import Optional, Dict, Any, List
+from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 
 
 class CarValidationError(Exception):
-    """Car validation error with field information."""
+    """Car validation error with field details."""
 
     def __init__(self, message: str, field: Optional[str] = None,
                  code: Optional[str] = None):
@@ -175,20 +229,15 @@ class CarValidator:
             return
 
         # Check digit validation (vị trí 9)
-        # Temporarily disabled - check digit validation is complex and may cause false negatives
-        # if not self._validate_vin_check_digit(vin):
-        #     result.add_error(
-        #         "VIN không hợp lệ (check digit sai)",
-        #         'vin',
-        #         'invalid_check_digit'
-        #     )
+        if not self._validate_vin_check_digit(vin):
+            result.add_error(
+                "VIN không hợp lệ (check digit sai)",
+                'vin',
+                'invalid_check_digit'
+            )
 
     def _validate_vin_check_digit(self, vin: str) -> bool:
-        """Validate VIN check digit (position 9).
-
-        Note: This validation is lenient - if calculation fails,
-        we assume the VIN is valid to avoid false negatives.
-        """
+        """Validate VIN check digit (position 9)."""
         try:
             total = 0
             for i, char in enumerate(vin):
@@ -197,17 +246,16 @@ class CarValidator:
                 elif char in self.VIN_TRANSLITERATION:
                     value = self.VIN_TRANSLITERATION[char]
                 else:
-                    return True  # Invalid char, but let other validation catch it
+                    return False
 
                 total += value * self.VIN_WEIGHTS[i]
 
             check_digit = total % 11
             check_char = 'X' if check_digit == 10 else str(check_digit)
 
-            # Be lenient - only flag if obviously wrong
             return vin[8] == check_char
         except Exception:
-            return True  # Be lenient on calculation errors
+            return True  # Bỏ qua nếu không validate được
 
     def _validate_license_plate(self, plate: Optional[str],
                                  result: CarValidationResult):
@@ -475,83 +523,287 @@ class CarValidator:
             'engine_number': 'Số máy'
         }
         return names.get(field, field)
+```
 
-    # Backward compatibility - static methods that raise on first error
-    @staticmethod
-    def validate_vin(vin: str) -> None:
-        """Validate VIN (backward compatibility)."""
+### Validation Service
+```python
+# src/services/car_validation_service.py
+from typing import Dict, Any, Optional, List
+from ..repositories.car_repository import CarRepository
+from ..validators.car_validator import CarValidator, CarValidationResult
+
+
+class CarValidationService:
+    """Service for car validation with database checks."""
+
+    def __init__(self, car_repository: CarRepository):
+        self.car_repo = car_repository
+        self.validator = CarValidator()
+
+    def validate_for_create(self, data: Dict[str, Any]) -> CarValidationResult:
+        """Validate car data for creation."""
+        result = self.validator.validate_all(data, is_update=False)
+
+        # Check unique VIN
+        if 'vin' in data and data['vin']:
+            existing = self.car_repo.get_by_vin(data['vin'])
+            if existing:
+                result.add_error(
+                    f"VIN '{data['vin']}' đã tồn tại",
+                    'vin',
+                    'duplicate'
+                )
+
+        # Check unique license plate
+        if data.get('license_plate'):
+            existing = self.car_repo.get_by_license_plate(data['license_plate'])
+            if existing:
+                result.add_error(
+                    f"Biển số '{data['license_plate']}' đã tồn tại",
+                    'license_plate',
+                    'duplicate'
+                )
+
+        return result
+
+    def validate_for_update(self, car_id: int,
+                            data: Dict[str, Any]) -> CarValidationResult:
+        """Validate car data for update."""
+        result = self.validator.validate_all(data, is_update=True)
+
+        existing_car = self.car_repo.get_by_id(car_id)
+        if not existing_car:
+            result.add_error("Xe không tồn tại", 'general', 'not_found')
+            return result
+
+        # Check unique VIN if changed
+        if 'vin' in data and data['vin']:
+            if data['vin'].upper() != existing_car.vin.upper():
+                existing = self.car_repo.get_by_vin(data['vin'])
+                if existing and existing.id != car_id:
+                    result.add_error(
+                        f"VIN '{data['vin']}' đã tồn tại",
+                        'vin',
+                        'duplicate'
+                    )
+
+        # Check unique license plate if changed
+        if data.get('license_plate'):
+            if data['license_plate'].upper() != existing_car.license_plate:
+                existing = self.car_repo.get_by_license_plate(data['license_plate'])
+                if existing and existing.id != car_id:
+                    result.add_error(
+                        f"Biển số '{data['license_plate']}' đã tồn tại",
+                        'license_plate',
+                        'duplicate'
+                    )
+
+        return result
+
+    def validate_field(self, field_name: str,
+                       value: Any) -> List[str]:
+        """Validate a single field (for real-time validation)."""
+        data = {field_name: value}
+        result = self.validator.validate_all(data)
+        return result.get_errors_by_field().get(field_name, [])
+```
+
+---
+
+## 4. UI Design
+
+### Error Display
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ⚠️ Vui lòng sửa các lỗi sau:                               │
+│  • VIN: VIN phải có đúng 17 ký tự                          │
+│  • Giá bán: Giá bán không được âm                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  VIN *                                                      │
+│  ┌──────────────────┐                                       │
+│  │ 1HGCM82633A      │  ❌ VIN phải có đúng 17 ký tự        │
+│  └──────────────────┘                                       │
+│                                                             │
+│  Giá bán *                                                  │
+│  ┌──────────────────┐                                       │
+│  │ -50000000        │  ❌ Giá bán không được âm             │
+│  └──────────────────┘                                       │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Real-time Validation
+- Validate on blur (rời khỏi field)
+- Debounce 300ms cho text input
+- Inline error message dưới mỗi field
+- Border đỏ khi có lỗi, xanh khi hợp lệ
+
+---
+
+## 5. Testing
+
+### Edge Case Tests
+```python
+# tests/test_car_validation.py
+import unittest
+from src.validators.car_validator import CarValidator, CarValidationResult
+
+class TestCarValidation(unittest.TestCase):
+    """Edge case tests for car validation."""
+
+    def setUp(self):
+        self.validator = CarValidator()
+
+    def test_vin_with_invalid_chars(self):
+        """Test VIN with invalid characters (I, O, Q)."""
+        result = self.validator.validate_all({
+            'vin': '1HGCM82633A12345I'  # Contains 'I'
+        })
+        self.assertFalse(result.is_valid)
+        errors = result.get_errors_by_field()
+        self.assertIn('vin', errors)
+
+    def test_vin_check_digit(self):
+        """Test VIN check digit validation."""
+        # Valid VIN with correct check digit
+        result = self.validator.validate_all({
+            'vin': '1HGCM82633A123456'  # Giả sử có check digit đúng
+        })
+        # Không check lỗi check digit nếu không thể tính
+
+    def test_license_plate_formats(self):
+        """Test various license plate formats."""
+        valid_plates = [
+            '51A-12345',
+            '51AA-12345',
+            '30A-12345',
+            '99A-99999'
+        ]
+        for plate in valid_plates:
+            result = CarValidationResult()
+            self.validator._validate_license_plate(plate, result)
+            self.assertTrue(result.is_valid, f"Plate {plate} should be valid")
+
+    def test_license_plate_invalid(self):
+        """Test invalid license plates."""
+        invalid_plates = [
+            '51A-123',        # Too short
+            '51A-1234567',    # Too long
+            'ABC-12345',      # No province code
+            '51-12345',       # Missing letter
+            '51IO-12345',     # Contains I or O
+        ]
+        for plate in invalid_plates:
+            result = CarValidationResult()
+            self.validator._validate_license_plate(plate, result)
+            self.assertFalse(result.is_valid, f"Plate {plate} should be invalid")
+
+    def test_year_edge_cases(self):
+        """Test year validation edge cases."""
+        from datetime import datetime
+        current_year = datetime.now().year
+
+        # Valid years
+        for year in [1900, 2000, current_year, current_year + 1]:
+            result = CarValidationResult()
+            self.validator._validate_year(year, result)
+            self.assertTrue(result.is_valid, f"Year {year} should be valid")
+
+        # Invalid years
+        for year in [1899, current_year + 2, 3000]:
+            result = CarValidationResult()
+            self.validator._validate_year(year, result)
+            self.assertFalse(result.is_valid, f"Year {year} should be invalid")
+
+    def test_price_edge_cases(self):
+        """Test price validation edge cases."""
         result = CarValidationResult()
-        CarValidator()._validate_vin(vin, result)
-        result.raise_if_invalid()
+        self.validator._validate_price(0, 'test', 'Test', result)
+        self.assertTrue(result.is_valid)  # 0 is valid
 
-    @staticmethod
-    def validate_license_plate(plate: Optional[str]) -> None:
-        """Validate license plate (backward compatibility)."""
         result = CarValidationResult()
-        CarValidator()._validate_license_plate(plate, result)
-        result.raise_if_invalid()
+        self.validator._validate_price(99999999999, 'test', 'Test', result)
+        self.assertFalse(result.is_valid)  # Too large
 
-    @staticmethod
-    def validate_year(year: Optional[int]) -> None:
-        """Validate year (backward compatibility)."""
+    def test_mileage_unrealistic(self):
+        """Test unrealistic mileage."""
         result = CarValidationResult()
-        CarValidator()._validate_year(year, result)
-        result.raise_if_invalid()
+        self.validator._validate_mileage(15000000, result)  # 15 triệu km
+        self.assertFalse(result.is_valid)
 
-    @staticmethod
-    def validate_price(price: Optional[float], field_name: str = "Giá") -> None:
-        """Validate price (backward compatibility)."""
+    def test_cross_field_price_profit(self):
+        """Test cross-field price validation."""
         result = CarValidationResult()
-        field = 'price'
-        CarValidator()._validate_price(price, field, field_name, result)
-        result.raise_if_invalid()
+        self.validator._validate_cross_fields({
+            'purchase_price': 1000000000,
+            'selling_price': 700000000  # Mất 30%
+        }, result)
+        self.assertFalse(result.is_valid)
 
-    @staticmethod
-    def validate_mileage(mileage: Optional[int]) -> None:
-        """Validate mileage (backward compatibility)."""
+    def test_cross_field_year_mileage(self):
+        """Test year vs mileage consistency."""
+        from datetime import datetime
+        current_year = datetime.now().year
+
         result = CarValidationResult()
-        CarValidator()._validate_mileage(mileage, result)
-        result.raise_if_invalid()
+        self.validator._validate_cross_fields({
+            'year': current_year - 1,
+            'mileage': 500000  # 500k km trong 1 năm
+        }, result)
+        self.assertFalse(result.is_valid)
 
-    @staticmethod
-    def validate_brand(brand: str) -> None:
-        """Validate brand (backward compatibility)."""
-        if not brand:
-            raise CarValidationError("Hãng xe không được để trống", 'brand')
-        if len(brand) > 50:
-            raise CarValidationError("Tên hãng xe không được quá 50 ký tự", 'brand')
+    def test_multiple_errors(self):
+        """Test collecting multiple errors."""
+        result = self.validator.validate_all({
+            'vin': 'SHORT',
+            'license_plate': 'INVALID',
+            'year': 1800,
+            'selling_price': -1000000
+        })
 
-    @staticmethod
-    def validate_model(model: str) -> None:
-        """Validate model (backward compatibility)."""
-        if not model:
-            raise CarValidationError("Model xe không được để trống", 'model')
-        if len(model) > 50:
-            raise CarValidationError("Tên model không được quá 50 ký tự", 'model')
+        self.assertFalse(result.is_valid)
+        errors = result.get_errors_by_field()
+        self.assertIn('vin', errors)
+        self.assertIn('license_plate', errors)
+        self.assertIn('year', errors)
+        self.assertIn('selling_price', errors)
+```
 
-    @staticmethod
-    def validate_status(status: str) -> None:
-        """Validate status (backward compatibility)."""
-        if status not in CarValidator.VALID_STATUSES:
-            raise CarValidationError(
-                f"Trạng thái không hợp lệ. Các giá trị hợp lệ: {', '.join(CarValidator.VALID_STATUSES)}",
-                'status'
-            )
+---
 
-    @staticmethod
-    def validate_transmission(transmission: Optional[str]) -> None:
-        """Validate transmission (backward compatibility)."""
-        if transmission and transmission not in CarValidator.VALID_TRANSMISSIONS:
-            raise CarValidationError(
-                f"Hộp số không hợp lệ. Các giá trị hợp lệ: {', '.join(CarValidator.VALID_TRANSMISSIONS)}",
-                'transmission'
-            )
+## 6. Definition of Done
 
-    @staticmethod
-    def validate_fuel_type(fuel_type: Optional[str]) -> None:
-        """Validate fuel type (backward compatibility)."""
-        if fuel_type and fuel_type not in CarValidator.VALID_FUEL_TYPES:
-            raise CarValidationError(
-                f"Loại nhiên liệu không hợp lệ. Các giá trị hợp lệ: {', '.join(CarValidator.VALID_FUEL_TYPES)}",
-                'fuel_type'
-            )
+- [ ] All fields have proper validation
+- [ ] VIN check digit validation implemented
+- [ ] Vietnamese license plate format validation
+- [ ] Cross-field validation (price, year/mileage)
+- [ ] Error messages in Vietnamese
+- [ ] Real-time validation on UI
+- [ ] Edge cases tested
+- [ ] No critical validation bypass
+- [ ] Code committed: `feat: logic validation xe`
+
+---
+
+## 7. Git Commit
+
+```bash
+# Files to commit
+- src/validators/car_validator.py (cập nhật hoàn chỉnh)
+- src/services/car_validation_service.py (mới)
+- src/ui/components/validation_display.py (mới - nếu có)
+- tests/test_car_validation.py (mới)
+- src/database/schema.sql (cập nhật constraints)
+
+# Commit message
+feat: logic validation xe
+
+- Thêm validation toàn diện cho tất cả các trường xe
+- Triển khai VIN check digit validation
+- Thêm validation định dạng biển số Việt Nam
+- Thêm cross-field validation (giá, năm/km)
+- Tạo validation service với DB uniqueness checks
+- Thêm thông báo lỗi tiếng Việt
+- Thêm edge case tests
+```

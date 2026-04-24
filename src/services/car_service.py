@@ -70,10 +70,14 @@ class CarService:
             DuplicateVINError: If VIN already exists
         """
         # Validate all fields
-        try:
-            self.validator.validate_all(car_data, is_update=False)
-        except CarValidationError as e:
-            raise CarValidationServiceError(e.message, [{'field': e.field, 'message': e.message}])
+        result = self.validator.validate_all(car_data, is_update=False)
+        if not result.is_valid:
+            errors = [{'field': e.field, 'message': e.message, 'code': e.code}
+                     for e in result.errors]
+            raise CarValidationServiceError(
+                f"Validation failed with {len(errors)} error(s)",
+                errors
+            )
 
         # Check for duplicate VIN
         if self.car_repo.exists(vin=car_data.get('vin')):
@@ -120,10 +124,14 @@ class CarService:
             raise CarNotFoundError(f"Không tìm thấy xe với ID {car_id}")
 
         # Validate
-        try:
-            self.validator.validate_all(car_data, is_update=True)
-        except CarValidationError as e:
-            raise CarValidationServiceError(e.message, [{'field': e.field, 'message': e.message}])
+        result = self.validator.validate_all(car_data, is_update=True)
+        if not result.is_valid:
+            errors = [{'field': e.field, 'message': e.message, 'code': e.code}
+                     for e in result.errors]
+            raise CarValidationServiceError(
+                f"Validation failed with {len(errors)} error(s)",
+                errors
+            )
 
         # Check for duplicate license plate if changed
         if car_data.get('license_plate'):

@@ -397,6 +397,22 @@ CREATE TRIGGER IF NOT EXISTS cars_au AFTER UPDATE ON cars BEGIN
     VALUES (new.id, new.vin, new.license_plate, new.brand, new.model, new.description);
 END;
 
+-- =====================================================
+-- SPRINT 1.4: CAR VALIDATION CONSTRAINTS
+-- =====================================================
+
+-- Unique indexes (excluding soft-deleted records)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cars_vin_unique ON cars(vin) WHERE is_deleted = 0;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cars_plate_unique ON cars(license_plate) WHERE license_plate IS NOT NULL AND is_deleted = 0;
+
+-- Additional indexes for validation
+CREATE INDEX IF NOT EXISTS idx_cars_color ON cars(color);
+CREATE INDEX IF NOT EXISTS idx_cars_transmission ON cars(transmission);
+CREATE INDEX IF NOT EXISTS idx_cars_fuel_type ON cars(fuel_type);
+CREATE INDEX IF NOT EXISTS idx_cars_is_deleted ON cars(is_deleted);
+
+-- Note: CHECK constraints were added in table definition above
+
 -- Additional indexes cho search
 CREATE INDEX IF NOT EXISTS idx_cars_brand_model ON cars(brand, model);
 CREATE INDEX IF NOT EXISTS idx_cars_price_range ON cars(selling_price);
