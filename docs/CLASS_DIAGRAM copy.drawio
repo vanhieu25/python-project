@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2026-04-25T00:00:00.000Z" agent="CarManagementSystem" version="21.0.0" etag="car_management_system_fixed" type="device">
+<mxfile host="app.diagrams.net" modified="2026-04-25T00:00:00.000Z" agent="CarManagementSystem" version="21.0.0" etag="car_management_system_relations_added" type="device">
   <diagram name="Class Diagram" id="class-diagram-car-management">
     <mxGraphModel dx="2000" dy="1500" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
       <root>
@@ -195,20 +195,21 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="user-contract-rel" value="creates (1:N)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="user-class" target="contract-class">
+        <mxCell id="user-contract-rel" value="tạo (1:N)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="user-class" target="contract-class">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="customer-contract-rel" value="has (1:N)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="customer-class" target="contract-class">
+        <mxCell id="customer-contract-rel" value="sở hữu (1:N)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="customer-class" target="contract-class">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="car-contract-rel" value="sold via (1:N)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;exitX=0;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.1;entryDx=0;entryDy=0;" edge="1" parent="1" source="car-class" target="contract-class">
+        <mxCell id="car-contract-rel" value="bán qua (1:N)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;exitX=0;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.1;entryDx=0;entryDy=0;" edge="1" parent="1" source="car-class" target="contract-class">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
+
 
         <mxCell id="additional-module" value="&lt;b&gt;CÁC MODULE KHÁC&lt;/b&gt;" style="swimlane;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="1330" y="80" width="660" height="1180" as="geometry" />
+          <mxGeometry x="1330" y="80" width="660" height="1350" as="geometry" />
         </mxCell>
 
         <mxCell id="supplier-class" value="&lt;b&gt;Nhà Cung Cấp&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="additional-module">
@@ -290,18 +291,51 @@
         </mxCell>
 
         <mxCell id="complaint-class" value="&lt;b&gt;Khiếu Nại&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="additional-module">
-          <mxGeometry x="20" y="1080" width="290" height="70" as="geometry" />
+          <mxGeometry x="180" y="1000" width="290" height="330" as="geometry" />
         </mxCell>
         <mxCell id="complaint-attrs" value="+ id: Integer {PK}&lt;br&gt;+ complaint_code: String {Unique}&lt;br&gt;+ customer_id: Integer {FK}&lt;br&gt;+ contract_id: Integer {FK}&lt;br&gt;+ complaint_date: DateTime&lt;br&gt;+ category: String&lt;br&gt;+ severity: String&lt;br&gt;+ title: String&lt;br&gt;+ description: String&lt;br&gt;+ evidence_files: String {JSON}&lt;br&gt;+ assigned_to: Integer {FK}&lt;br&gt;+ handled_by: Integer {FK}&lt;br&gt;+ status: String&lt;br&gt;+ resolution: String&lt;br&gt;+ resolution_date: DateTime&lt;br&gt;+ compensation_amount: Decimal&lt;br&gt;+ customer_satisfaction: Integer&lt;br&gt;+ would_recommend: Boolean&lt;br&gt;+ created_by: Integer {FK}&lt;br&gt;+ created_at: DateTime&lt;br&gt;+ updated_at: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" vertex="1" parent="complaint-class">
-          <mxGeometry y="30" width="290" height="0" as="geometry" />
+          <mxGeometry y="30" width="290" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="complaint-sep1" value="" style="line;strokeColor=inherit;fillColor=none;" vertex="1" parent="complaint-class">
+          <mxGeometry y="260" width="290" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="complaint-methods" value="+ assign()&lt;br&gt;+ resolve()&lt;br&gt;+ escalate()&lt;br&gt;+ record_satisfaction()" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" vertex="1" parent="complaint-class">
+          <mxGeometry y="270" width="290" height="50" as="geometry" />
         </mxCell>
 
-        <mxCell id="complaint-class2" value="&lt;b&gt;Khiếu Nại&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="additional-module">
-          <mxGeometry x="340" y="1000" width="290" height="150" as="geometry" />
+
+        <mxCell id="rel-supplier-car" value="cung cấp (1:N)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;" edge="1" parent="1" source="supplier-class" target="car-class">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="complaint-methods" value="+ assign()&lt;br&gt;+ resolve()&lt;br&gt;+ escalate()&lt;br&gt;+ record_satisfaction()" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" vertex="1" parent="complaint-class2">
-          <mxGeometry y="30" width="290" height="120" as="geometry" />
+
+        <mxCell id="rel-promo-contract" value="áp dụng (1:N)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;" edge="1" parent="1" source="promotion-class" target="contract-class">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
+
+        <mxCell id="rel-acc-contractacc" value="chi tiết (1:N)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;" edge="1" parent="1" source="accessory-class" target="contractacc-class">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rel-contract-warranty" value="thuộc về (1:1)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;" edge="1" parent="1" source="contract-class" target="warranty-class">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rel-contract-installment" value="thanh toán qua (1:1)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;" edge="1" parent="1" source="contract-class" target="installment-class">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rel-car-inventory" value="lưu kho (1:1)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;" edge="1" parent="1" source="car-class" target="inventory-class">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rel-customer-complaint" value="gửi (1:N)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;exitX=1;exitY=0.9;exitDx=0;exitDy=0;" edge="1" parent="1" source="customer-class" target="complaint-class">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rel-contract-complaint" value="về hợp đồng (1:N)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;dashed=1;exitX=1;exitY=0.9;exitDx=0;exitDy=0;" edge="1" parent="1" source="contract-class" target="complaint-class">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
 
         <mxCell id="legend" value="&lt;b&gt;CHÚ GIẢI&lt;/b&gt;&lt;br&gt;&lt;br&gt;🟡 Module Người Dùng&lt;br&gt;🟢 Module Ô Tô&lt;br&gt;🟠 Module Khách Hàng&lt;br&gt;🔵 Module Hợp Đồng&lt;br&gt;⬜ Các Module Khác&lt;br&gt;&lt;br&gt;&lt;b&gt;Các mối quan hệ:&lt;/b&gt;&lt;br&gt;——&gt; 1:N (mũi tên mở)&lt;br&gt;- - &gt; Liên kết (nét đứt)&lt;br&gt;&lt;br&gt;{PK} Khóa chính&lt;br&gt;{FK} Khóa ngoại&lt;br&gt;{Unique} Ràng buộc duy nhất&lt;br&gt;{JSON} Kiểu dữ liệu JSON" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#f5f5f5;strokeColor=#666666;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;" vertex="1" parent="1">
           <mxGeometry x="50" y="1110" width="250" height="260" as="geometry" />
