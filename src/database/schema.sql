@@ -463,6 +463,7 @@ CREATE TABLE IF NOT EXISTS customers (
     is_deleted BOOLEAN DEFAULT 0,               -- Soft delete flag
     deleted_at DATETIME,
     deleted_by INTEGER,
+    delete_reason TEXT,                         -- Lý do xóa
 
     FOREIGN KEY (assigned_to) REFERENCES users(id),
     FOREIGN KEY (created_by) REFERENCES users(id),
@@ -477,12 +478,40 @@ CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(full_name);
 CREATE INDEX IF NOT EXISTS idx_customers_assigned ON customers(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_customers_is_deleted ON customers(is_deleted);
 
+-- Unique indexes (excluding soft-deleted records)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_phone_unique
+ON customers(phone) WHERE phone IS NOT NULL AND is_deleted = 0;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_email_unique
+ON customers(email) WHERE email IS NOT NULL AND is_deleted = 0;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_id_card_unique
+ON customers(id_card) WHERE id_card IS NOT NULL AND is_deleted = 0;
+
 -- Trigger cập nhật updated_at cho customers
 CREATE TRIGGER IF NOT EXISTS update_customers_timestamp
 AFTER UPDATE ON customers
 BEGIN
     UPDATE customers SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
+
+-- Bảng customer_history (Lịch sử thay đổi khách hàng)
+CREATE TABLE IF NOT EXISTS customer_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER NOT NULL,
+    action VARCHAR(20) NOT NULL,                  -- create, update, delete, restore
+    field_name VARCHAR(50),                       -- Tên field thay đổi (nếu update)
+    old_value TEXT,                               -- Giá trị cũ
+    new_value TEXT,                               -- Giá trị mới
+    changed_by INTEGER,                           -- Người thay đổi
+    changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+    FOREIGN KEY (changed_by) REFERENCES users(id)
+);
+
+-- Indexes cho customer_history
+CREATE INDEX IF NOT EXISTS idx_customer_history_customer ON customer_history(customer_id);
+CREATE INDEX IF NOT EXISTS idx_customer_history_changed_at ON customer_history(changed_at);
 
 -- Seed data cho customers
 INSERT OR IGNORE INTO customers (id, customer_code, customer_type, full_name, id_card, phone, email, address, province, customer_class, source) VALUES

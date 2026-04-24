@@ -4,7 +4,8 @@
       "Bash(git rebase *)",
       "Bash(python -m unittest tests.test_customer_repository -v)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(python -m unittest tests.test_customer_service tests.test_customer_validator -v)"
     ]
   }
 }

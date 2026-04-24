@@ -200,12 +200,14 @@ class CustomerRepository:
         except Exception:
             return False
 
-    def soft_delete(self, customer_id: int, deleted_by: Optional[int] = None) -> bool:
+    def soft_delete(self, customer_id: int, deleted_by: Optional[int] = None,
+                   reason: Optional[str] = None) -> bool:
         """Soft delete customer.
 
         Args:
             customer_id: Customer ID
             deleted_by: User ID who deleted
+            reason: Reason for deletion
 
         Returns:
             bool: True if successful
@@ -214,11 +216,12 @@ class CustomerRepository:
             UPDATE customers SET
                 is_deleted = 1,
                 deleted_at = ?,
-                deleted_by = ?
+                deleted_by = ?,
+                delete_reason = ?
             WHERE id = ?
         """
         try:
-            self.db.execute(query, (datetime.now(), deleted_by, customer_id))
+            self.db.execute(query, (datetime.now(), deleted_by, reason, customer_id))
             return True
         except Exception:
             return False
@@ -236,7 +239,8 @@ class CustomerRepository:
             UPDATE customers SET
                 is_deleted = 0,
                 deleted_at = NULL,
-                deleted_by = NULL
+                deleted_by = NULL,
+                delete_reason = NULL
             WHERE id = ? AND is_deleted = 1
         """
         try:
