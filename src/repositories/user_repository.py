@@ -327,6 +327,29 @@ class UserRepository:
         except Exception:
             return False
 
+    def update_login_info(self, user_id: int) -> bool:
+        """Update user login info after successful login.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            bool: True if successful
+        """
+        query = """
+            UPDATE users SET
+                last_login = ?,
+                login_count = login_count + 1,
+                updated_at = ?
+            WHERE id = ?
+        """
+        try:
+            now = datetime.now()
+            self.db.execute(query, (now, now, user_id))
+            return True
+        except Exception:
+            return False
+
     def soft_delete(self, user_id: int) -> bool:
         """Soft delete user.
 

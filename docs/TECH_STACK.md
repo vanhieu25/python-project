@@ -1,7 +1,5 @@
 # Tech Stack - Quản Lý Đại Lý Xe Hơi
 
-**Phiên bản**: 1.0  
-**Ngày cập nhật**: 20/04/2026  
 **Nhóm**: Nhóm 4
 
 ---

@@ -135,7 +135,7 @@ INSERT OR IGNORE INTO roles (id, role_name, role_code, description, level) VALUE
 
 -- Insert default admin user (password: admin123, hashed with bcrypt)
 INSERT OR IGNORE INTO users (id, username, password_hash, full_name, email, role_id, department, position, status) VALUES
-(1, 'admin', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewKyNiAYMyzJ/Ii2', 'Administrator', 'admin@cardealership.com', 1, 'Management', 'System Admin', 'active');
+(1, 'admin', '$2b$12$atb7tgMlswczs6Khafm/ieJ93kjj20FNueYxqSwzoftoxxMkDsmRy', 'Administrator', 'admin@cardealership.com', 1, 'Management', 'System Admin', 'active');
 
 -- Insert permissions - Sprint 0.3
 -- Cars Module
