@@ -418,5 +418,81 @@ CREATE INDEX IF NOT EXISTS idx_cars_brand_model ON cars(brand, model);
 CREATE INDEX IF NOT EXISTS idx_cars_price_range ON cars(selling_price);
 CREATE INDEX IF NOT EXISTS idx_cars_status_year ON cars(status, year);
 
+-- =====================================================
+-- SPRINT 2: CUSTOMER MANAGEMENT
+-- =====================================================
+
+-- Bảng customers (Thông tin khách hàng)
+CREATE TABLE IF NOT EXISTS customers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_code VARCHAR(20) UNIQUE,           -- Mã khách hàng (tự động sinh)
+    customer_type VARCHAR(20) DEFAULT 'individual', -- individual/business
+
+    -- Thông tin cá nhân
+    full_name VARCHAR(100) NOT NULL,            -- Họ tên (cá nhân) hoặc tên người đại diện (doanh nghiệp)
+    id_card VARCHAR(20),                        -- CMND/CCCD
+    date_of_birth DATE,                         -- Ngày sinh
+    gender VARCHAR(10),                         -- Nam/Nữ/Khác
+
+    -- Thông tin doanh nghiệp (nếu customer_type = 'business')
+    company_name VARCHAR(100),                  -- Tên công ty
+    tax_code VARCHAR(20),                       -- Mã số thuế
+    business_registration VARCHAR(50),          -- Số đăng ký kinh doanh
+
+    -- Thông tin liên hệ
+    phone VARCHAR(20),                          -- Số điện thoại chính
+    phone2 VARCHAR(20),                         -- Số điện thoại phụ
+    email VARCHAR(100),                         -- Email
+
+    -- Địa chỉ
+    address TEXT,                               -- Địa chỉ đầy đủ
+    province VARCHAR(50),                       -- Tỉnh/Thành phố
+    district VARCHAR(50),                       -- Quận/Huyện
+    ward VARCHAR(50),                           -- Phường/Xã
+
+    -- Thông tin phân loại
+    customer_class VARCHAR(20) DEFAULT 'regular', -- regular/potential/vip
+    source VARCHAR(50),                         -- Nguồn khách hàng (facebook, website, referral, etc.)
+
+    -- Metadata
+    notes TEXT,                                 -- Ghi chú
+    assigned_to INTEGER,                        -- Nhân viên phụ trách
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_by INTEGER,                         -- Người tạo record
+    is_deleted BOOLEAN DEFAULT 0,               -- Soft delete flag
+    deleted_at DATETIME,
+    deleted_by INTEGER,
+
+    FOREIGN KEY (assigned_to) REFERENCES users(id),
+    FOREIGN KEY (created_by) REFERENCES users(id),
+    FOREIGN KEY (deleted_by) REFERENCES users(id)
+);
+
+-- Indexes cho customers
+CREATE INDEX IF NOT EXISTS idx_customers_type ON customers(customer_type);
+CREATE INDEX IF NOT EXISTS idx_customers_class ON customers(customer_class);
+CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(full_name);
+CREATE INDEX IF NOT EXISTS idx_customers_assigned ON customers(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_customers_is_deleted ON customers(is_deleted);
+
+-- Trigger cập nhật updated_at cho customers
+CREATE TRIGGER IF NOT EXISTS update_customers_timestamp
+AFTER UPDATE ON customers
+BEGIN
+    UPDATE customers SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- Seed data cho customers
+INSERT OR IGNORE INTO customers (id, customer_code, customer_type, full_name, id_card, phone, email, address, province, customer_class, source) VALUES
+(1, 'KH000001', 'individual', 'Nguyễn Văn An', '012345678901', '0901234567', 'an.nguyen@email.com', '123 Lê Lợi, Quận 1', 'Hồ Chí Minh', 'vip', 'referral'),
+(2, 'KH000002', 'individual', 'Trần Thị Bình', '023456789012', '0912345678', 'binh.tran@email.com', '456 Nguyễn Huệ, Quận 1', 'Hồ Chí Minh', 'regular', 'facebook'),
+(3, 'KH000003', 'business', 'Lê Văn Cường', NULL, '0923456789', 'cuong.le@company.com', '789 Điện Biên Phủ, Quận 3', 'Hồ Chí Minh', 'potential', 'website');
+
+-- Update company_name cho business customers
+UPDATE customers SET company_name = 'Công ty TNHH ABC' WHERE customer_code = 'KH000003';
+UPDATE customers SET tax_code = '0123456789' WHERE customer_code = 'KH000003';
+
 
 
