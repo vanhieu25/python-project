@@ -551,5 +551,79 @@ LEFT JOIN contracts co ON c.id = co.customer_id
 WHERE c.is_deleted = 0
 GROUP BY c.id;
 
+-- =====================================================
+-- SPRINT 2.4: CUSTOMER VIP CLASSIFICATION
+-- =====================================================
+
+-- Bảng customer_classification_rules
+CREATE TABLE IF NOT EXISTS customer_classification_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    rule_name VARCHAR(50) NOT NULL,
+    customer_class VARCHAR(20) NOT NULL,
+    min_contracts INTEGER DEFAULT 0,
+    min_total_value DECIMAL(15,2) DEFAULT 0,
+    min_avg_value DECIMAL(15,2) DEFAULT 0,
+    min_frequency_months INTEGER,
+    is_active BOOLEAN DEFAULT 1,
+    priority INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Bảng customer_classification_history
+CREATE TABLE IF NOT EXISTS customer_classification_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER NOT NULL,
+    old_class VARCHAR(20),
+    new_class VARCHAR(20),
+    reason VARCHAR(50),
+    changed_by INTEGER,
+    triggered_by_rule_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(id),
+    FOREIGN KEY (changed_by) REFERENCES users(id),
+    FOREIGN KEY (triggered_by_rule_id) REFERENCES customer_classification_rules(id)
+);
+
+-- Bảng vip_benefits
+CREATE TABLE IF NOT EXISTS vip_benefits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_class VARCHAR(20) NOT NULL,
+    benefit_name VARCHAR(100) NOT NULL,
+    benefit_type VARCHAR(20),
+    benefit_value DECIMAL(10,2),
+    description TEXT,
+    is_active BOOLEAN DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Default rules
+INSERT OR IGNORE INTO customer_classification_rules
+(id, rule_name, customer_class, min_contracts, min_total_value, priority) VALUES
+(1, 'VIP - High Value', 'vip', 3, 2000000000, 1),
+(2, 'VIP - Frequent Buyer', 'vip', 5, 1000000000, 2),
+(3, 'Regular', 'regular', 1, 500000000, 3),
+(4, 'Potential', 'potential', 0, 0, 4);
+
+-- Default VIP benefits
+INSERT OR IGNORE INTO vip_benefits
+(customer_class, benefit_name, benefit_type, benefit_value, description) VALUES
+('vip', 'Giảm giá xe', 'discount', 5.0, 'Giảm 5% giá xe'),
+('vip', 'Ưu tiên dịch vụ', 'service', NULL, 'Ưu tiên trong xếp hàng dịch vụ'),
+('vip', 'Quà tặng bảo dưỡng', 'gift', 2000000, 'Phiếu bảo dưỡng miễn phí'),
+('regular', 'Giảm giá phụ kiện', 'discount', 3.0, 'Giảm 3% phụ kiện');
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_customer_class_rules ON customer_classification_rules(customer_class);
+CREATE INDEX IF NOT EXISTS idx_customer_class_history_customer ON customer_classification_history(customer_id);
+CREATE INDEX IF NOT EXISTS idx_customer_class_history_date ON customer_classification_history(created_at);
+
+-- Trigger cập nhật updated_at cho customer_classification_rules
+CREATE TRIGGER IF NOT EXISTS update_customer_classification_rules_timestamp
+AFTER UPDATE ON customer_classification_rules
+BEGIN
+    UPDATE customer_classification_rules SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
 
 
