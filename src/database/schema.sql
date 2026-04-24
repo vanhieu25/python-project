@@ -512,6 +512,8 @@ CREATE TABLE IF NOT EXISTS customer_history (
 -- Indexes cho customer_history
 CREATE INDEX IF NOT EXISTS idx_customer_history_customer ON customer_history(customer_id);
 CREATE INDEX IF NOT EXISTS idx_customer_history_changed_at ON customer_history(changed_at);
+CREATE INDEX IF NOT EXISTS idx_customer_history_action ON customer_history(action);
+CREATE INDEX IF NOT EXISTS idx_customer_history_date ON customer_history(changed_at);
 
 -- Seed data cho customers
 INSERT OR IGNORE INTO customers (id, customer_code, customer_type, full_name, id_card, phone, email, address, province, customer_class, source) VALUES
@@ -522,6 +524,32 @@ INSERT OR IGNORE INTO customers (id, customer_code, customer_type, full_name, id
 -- Update company_name cho business customers
 UPDATE customers SET company_name = 'Công ty TNHH ABC' WHERE customer_code = 'KH000003';
 UPDATE customers SET tax_code = '0123456789' WHERE customer_code = 'KH000003';
+
+-- =====================================================
+-- SPRINT 2.3: CUSTOMER HISTORY
+-- =====================================================
+
+-- View cho customer summary
+CREATE VIEW IF NOT EXISTS customer_summary AS
+SELECT
+    c.id as customer_id,
+    c.full_name,
+    c.customer_code,
+    COUNT(DISTINCT co.id) as total_contracts,
+    COALESCE(SUM(co.total_amount), 0) as total_transaction_value,
+    MAX(co.created_at) as last_transaction_date,
+    CASE
+        WHEN COUNT(DISTINCT co.id) >= 3 OR COALESCE(SUM(co.total_amount), 0) >= 2000000000
+        THEN 'vip'
+        WHEN COUNT(DISTINCT co.id) >= 1 OR COALESCE(SUM(co.total_amount), 0) >= 500000000
+        THEN 'regular'
+        ELSE 'potential'
+    END as auto_class
+FROM customers c
+LEFT JOIN contracts co ON c.id = co.customer_id
+    AND co.status IN ('signed', 'paid', 'delivered')
+WHERE c.is_deleted = 0
+GROUP BY c.id;
 
 
 

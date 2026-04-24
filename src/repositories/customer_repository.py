@@ -372,3 +372,51 @@ class CustomerRepository:
             List of assigned customers
         """
         return self.get_all(assigned_to=user_id)
+
+    def get_transaction_summary(self, customer_id: int) -> Dict[str, Any]:
+        """Get transaction summary for customer.
+
+        Args:
+            customer_id: Customer ID
+
+        Returns:
+            Dictionary with total_contracts, total_value, last_transaction
+        """
+        query = """
+            SELECT
+                COUNT(*) as total_contracts,
+                COALESCE(SUM(total_amount), 0) as total_value,
+                MAX(created_at) as last_transaction
+            FROM contracts
+            WHERE customer_id = ? AND status IN ('signed', 'paid', 'delivered')
+        """
+        result = self.db.fetch_one(query, (customer_id,))
+        return {
+            'total_contracts': result['total_contracts'] if result else 0,
+            'total_value': result['total_value'] if result else 0,
+            'last_transaction': result['last_transaction'] if result else None
+        }
+
+    def get_contracts(self, customer_id: int) -> List[Dict[str, Any]]:
+        """Get all contracts for customer.
+
+        Args:
+            customer_id: Customer ID
+
+        Returns:
+            List of contracts with car and user info
+        """
+        query = """
+            SELECT c.*,
+                   car.brand, car.model, car.license_plate,
+                   u.full_name as created_by_name
+            FROM contracts c
+            LEFT JOIN cars car ON c.car_id = car.id
+            LEFT JOIN users u ON c.created_by = u.id
+            WHERE c.customer_id = ?
+            ORDER BY c.created_at DESC
+        """
+        try:
+            return self.db.fetch_all(query, (customer_id,)) or []
+        except Exception:
+            return []
